@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os
+
+from core.data_handler import load_all_data
 
 # --- Configuration & Setup ---
 st.set_page_config(
@@ -9,9 +10,6 @@ st.set_page_config(
     layout="wide", # Use wide layout for better table viewing
     initial_sidebar_state="collapsed"
 )
-
-# Define the path to the data file
-DATA_FILE = 'submissions.csv'
 
 # Custom CSS for a clean, professional admin look
 st.markdown(
@@ -61,17 +59,12 @@ st.markdown(
 )
 
 
-
 @st.cache_data(ttl=1) 
 def load_data():
-    """Loads and preprocesses the feedback data."""
-    if not os.path.exists(DATA_FILE):
-        return pd.DataFrame()
-        
-    try:
-        df = pd.read_csv(DATA_FILE)
-    except pd.errors.EmptyDataError:
-        return pd.DataFrame()
+    """Loads and preprocesses the feedback data from Google Sheets."""
+    
+    # NEW LOGIC: Call the persistent data loading function
+    df = load_all_data()
 
     if df.empty:
         return df
@@ -112,15 +105,16 @@ if df_data.empty:
     st.info("No feedback submissions have been recorded yet.")
 else:
     
-
     header_col, button_col, status_col = st.columns([4, 2, 3])
 
     with header_col:
         st.markdown("## Key Performance Indicators")
     
     with button_col:
-        # button
+        # The button now forces a clear cache and rerun to get fresh data
         if st.button("Refresh Data", type="primary", use_container_width=True):
+            st.cache_data.clear() # Clears the cache to force a fresh GSheets read
+            st.rerun() # Reruns the script to fetch new data
             st.toast("Data refreshed!")
             
     with status_col:
@@ -159,7 +153,6 @@ else:
     )
     
     filtered_df = df_data[df_data['user_rating'] >= min_rating]
-
 
 
     # Create columns to push the table 
