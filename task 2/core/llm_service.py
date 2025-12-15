@@ -3,10 +3,6 @@
 import os
 from dataclasses import dataclass
 from groq import Groq, APIStatusError
-from dotenv import load_dotenv
-
-load_dotenv()
-
 
 # API Key Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
@@ -96,4 +92,5 @@ class LLMService:
                 user_response="We sincerely apologize for your experience. We are addressing this. (MOCK)",
                 admin_summary="Negative review citing customer support issues. (MOCK)",
                 admin_actions="Immediate manager follow-up, Identify root cause, Update training materials (MOCK)"
+
             )
