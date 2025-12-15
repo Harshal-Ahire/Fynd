@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-from core.data_handler import load_all_data
+from core.data_handler import load_all_submissions
 
 # --- Configuration & Setup ---
 st.set_page_config(
@@ -63,8 +63,8 @@ st.markdown(
 def load_data():
     """Loads and preprocesses the feedback data from Google Sheets."""
     
-    # NEW LOGIC: Call the persistent data loading function
-    df = load_all_data()
+    # Load data from Google Sheets via data handler
+    df = load_all_submissions()
 
     if df.empty:
         return df
@@ -113,7 +113,7 @@ else:
     with button_col:
         # The button now forces a clear cache and rerun to get fresh data
         if st.button("Refresh Data", type="primary", use_container_width=True):
-            st.cache_data.clear() # Clears the cache to force a fresh GSheets read
+            st.cache_data.clear() # Clears the cache to force a fresh Google Sheets read
             st.rerun() # Reruns the script to fetch new data
             st.toast("Data refreshed!")
             
