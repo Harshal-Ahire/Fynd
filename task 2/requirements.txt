@@ -1,4 +1,6 @@
 streamlit
 pandas
 python-dotenv
+gspread
+streamlit-gsheets
 groq
