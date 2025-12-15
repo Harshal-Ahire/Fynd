@@ -3,6 +3,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import os
+import json
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -23,9 +25,11 @@ def get_sheet():
     Returns the worksheet object for data operations.
     """
     try:
-        # Load credentials from Streamlit secrets
-        credentials_dict = st.secrets["gcp_service_account"]
-        
+        # Load credentials from ENV VAR (Render-compatible)
+        credentials_dict = json.loads(
+            os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
+        )
+
         # Create credentials object
         credentials = Credentials.from_service_account_info(
             credentials_dict,
