@@ -3,70 +3,132 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 # Define the name of the Google Sheet and Worksheet
 SHEET_TITLE = "FyndFeedbackSubmissions"
 WORKSHEET_NAME = "Submissions"
 
+# Define the required scopes for Google Sheets API
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
-# Use Streamlit's built-in GSheets connector
-# The connection is cached and managed by Streamlit
 @st.cache_resource
-def get_connection():
-    # This looks for the secret file named .streamlit/secrets.toml
-    return st.connection("gsheets", type="streamlit-gsheets")
+def get_sheet():
+    """
+    Establishes connection to Google Sheets using gspread and service account credentials.
+    Returns the worksheet object for data operations.
+    """
+    try:
+        # Load credentials from Streamlit secrets
+        credentials_dict = st.secrets["gcp_service_account"]
+        
+        # Create credentials object
+        credentials = Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=SCOPES
+        )
+        
+        # Authorize gspread client
+        client = gspread.authorize(credentials)
+        
+        # Open the spreadsheet and get the worksheet
+        spreadsheet = client.open(SHEET_TITLE)
+        worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
+        
+        return worksheet
+    except Exception as e:
+        st.error(f"Error connecting to Google Sheets: {e}")
+        return None
+
 
 def initialize_data_file():
     """
-    Initializes the Google Sheet connection resource.
+    Initializes the Google Sheet by ensuring the header row exists.
+    If the sheet is empty, it adds the column headers.
     """
-    # Store the connection in session state for easy access in save_submission
-    st.session_state["gsheets_conn"] = get_connection()
-    # Attempt a read to ensure the connection is initialized upon startup
     try:
-        st.session_state["gsheets_conn"].read(worksheet=WORKSHEET_NAME, ttl=0)
+        sheet = get_sheet()
+        if sheet is None:
+            return
+        
+        # Check if the sheet has any data
+        all_values = sheet.get_all_values()
+        
+        # If empty, add headers
+        if len(all_values) == 0:
+            headers = [
+                "timestamp",
+                "user_rating",
+                "user_review",
+                "ai_user_response",
+                "ai_summary",
+                "ai_actions"
+            ]
+            sheet.append_row(headers)
+            print(f"Initialized Google Sheet '{SHEET_TITLE}' with headers")
     except Exception as e:
-        # This will happen if the sheet doesn't exist yet, which is fine
-        print(f"GSheets initialization status: {e}") 
-    
+        print(f"Error initializing Google Sheet: {e}")
+
 
 def save_submission(data: dict):
     """
     Appends a new submission (as a dictionary) to the Google Sheet.
     """
-    conn = st.session_state.get("gsheets_conn")
-    if not conn:
-        st.error("GSheets connection not initialized. Cannot save data.")
-        return
-
-    # Convert the dictionary to a DataFrame for appending
-    df_new_row = pd.DataFrame([data])
-    
-    # Append the row to the specified worksheet
-    # The 'headers=True' ensures headers are written only on the first run
-    conn.append(
-        data=df_new_row, 
-        worksheet=WORKSHEET_NAME,
-        headers=True
-    )
-    # Clear the cache for the admin dashboard to see the new data immediately
-    st.cache_data.clear()
-
-def load_all_data() -> pd.DataFrame:
-    """
-    Reads all data from the Google Sheet for the Admin Dashboard.
-    """
-    conn = get_connection()
     try:
-        # Use a short TTL (Time To Live) to frequently refresh the data
-        df = conn.read(worksheet=WORKSHEET_NAME, ttl=1)
-        # Ensure column headers are processed if the sheet is empty
-        if df.empty:
-            return pd.DataFrame(columns=df.columns)
-        return df
+        sheet = get_sheet()
+        if sheet is None:
+            st.error("Could not connect to Google Sheets. Submission not saved.")
+            return
+        
+        # Ensure the data is in the correct order matching the headers
+        row_data = [
+            data.get("timestamp", ""),
+            data.get("user_rating", ""),
+            data.get("user_review", ""),
+            data.get("ai_user_response", ""),
+            data.get("ai_summary", ""),
+            data.get("ai_actions", "")
+        ]
+        
+        # Append the row to the sheet
+        sheet.append_row(row_data)
+        
     except Exception as e:
-        # Return empty DataFrame if the sheet/worksheet is not found or empty
-        print(f"Error loading data from GSheets: {e}")
-        return pd.DataFrame()
+        st.error(f"Error saving submission to Google Sheets: {e}")
 
-# NOTE: The original load_all_submissions is replaced by load_all_data
+
+def load_all_submissions():
+    """
+    Loads all submission data from the Google Sheet for the Admin Dashboard.
+    Returns a pandas DataFrame.
+    """
+    try:
+        sheet = get_sheet()
+        if sheet is None:
+            return pd.DataFrame()
+        
+        # Get all records as a list of dictionaries
+        records = sheet.get_all_records()
+        
+        # Convert to DataFrame
+        if len(records) == 0:
+            # Return empty DataFrame with expected columns if no data
+            return pd.DataFrame(columns=[
+                "timestamp",
+                "user_rating",
+                "user_review",
+                "ai_user_response",
+                "ai_summary",
+                "ai_actions"
+            ])
+        
+        df = pd.DataFrame(records)
+        return df
+        
+    except Exception as e:
+        print(f"Error loading data from Google Sheets: {e}")
+        return pd.DataFrame()
