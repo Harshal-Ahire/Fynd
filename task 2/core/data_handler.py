@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 import json
 import gspread
-import base64 # <-- NEW IMPORT: Required for Base64 decoding
+# Removed: import base64 (No longer needed)
 from google.oauth2.service_account import Credentials
 
 # Define the name of the Google Sheet and Worksheet
@@ -25,20 +25,17 @@ def get_sheet():
     Establishes connection to Google Sheets using gspread and service account credentials.
     Returns the worksheet object for data operations.
     
-    FIX: The environment variable is assumed to be Base64-encoded to prevent 
-    'Incorrect padding' errors common with multi-line JSON secrets.
+    SIMPLIFIED: Reads the raw JSON string directly from the environment variable.
+    NOTE: This requires the variable on Render to be manually set as a single, 
+    correctly escaped JSON line (no newlines).
     """
     try:
-        # Load credentials from ENV VAR (Render-compatible)
-        encoded_json = os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
+        # Load the raw string from the environment variable
+        json_string = os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
         
-        # --- FIX: Base64 Decode the key to handle padding/newlines correctly ---
-        decoded_bytes = base64.b64decode(encoded_json)
-        decoded_json = decoded_bytes.decode('utf-8')
-        
-        # Load the credentials dictionary from the decoded string
-        credentials_dict = json.loads(decoded_json)
-        # --- END FIX ---
+        # Use .strip() to clean any potential leading/trailing whitespace, then parse
+        # the JSON directly.
+        credentials_dict = json.loads(json_string.strip())
 
         # Create credentials object
         credentials = Credentials.from_service_account_info(
@@ -55,8 +52,8 @@ def get_sheet():
         
         return worksheet
     except Exception as e:
-        # st.error is called in the calling function (save_submission/load_all_submissions)
-        # for a clean display on the UI.
+        # If this fails, the error will likely be a JSONDecodeError 
+        # because the input string was not valid JSON.
         print(f"Error connecting to Google Sheets: {e}") 
         return None
 
