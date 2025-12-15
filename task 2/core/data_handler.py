@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import json
 import gspread
+import base64 # <-- NEW IMPORT: Required for Base64 decoding
 from google.oauth2.service_account import Credentials
 
 # Define the name of the Google Sheet and Worksheet
@@ -23,12 +24,21 @@ def get_sheet():
     """
     Establishes connection to Google Sheets using gspread and service account credentials.
     Returns the worksheet object for data operations.
+    
+    FIX: The environment variable is assumed to be Base64-encoded to prevent 
+    'Incorrect padding' errors common with multi-line JSON secrets.
     """
     try:
         # Load credentials from ENV VAR (Render-compatible)
-        credentials_dict = json.loads(
-            os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
-        )
+        encoded_json = os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
+        
+        # --- FIX: Base64 Decode the key to handle padding/newlines correctly ---
+        decoded_bytes = base64.b64decode(encoded_json)
+        decoded_json = decoded_bytes.decode('utf-8')
+        
+        # Load the credentials dictionary from the decoded string
+        credentials_dict = json.loads(decoded_json)
+        # --- END FIX ---
 
         # Create credentials object
         credentials = Credentials.from_service_account_info(
@@ -45,7 +55,9 @@ def get_sheet():
         
         return worksheet
     except Exception as e:
-        st.error(f"Error connecting to Google Sheets: {e}")
+        # st.error is called in the calling function (save_submission/load_all_submissions)
+        # for a clean display on the UI.
+        print(f"Error connecting to Google Sheets: {e}") 
         return None
 
 
@@ -85,6 +97,7 @@ def save_submission(data: dict):
     try:
         sheet = get_sheet()
         if sheet is None:
+            # Displays the error message seen in the user's output
             st.error("Could not connect to Google Sheets. Submission not saved.")
             return
         
