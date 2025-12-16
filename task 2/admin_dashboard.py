@@ -67,19 +67,37 @@ def load_data():
     df = load_all_submissions()
 
     if df.empty:
+        print("DEBUG: DataFrame is empty")
         return df
 
+    print(f"DEBUG: Loaded {len(df)} rows from Google Sheets")
+    print(f"DEBUG: Columns: {df.columns.tolist()}")
+    print(f"DEBUG: First row: {df.iloc[0].to_dict() if len(df) > 0 else 'No rows'}")
+
     # 1. Convert timestamp to datetime and format Date
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    # Format the Date column as requested: 15 Dec, 2025
-    df['Date'] = df['timestamp'].dt.strftime('%d %b, %Y')
+    try:
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # Format the Date column as requested: 15 Dec, 2025
+        df['Date'] = df['timestamp'].dt.strftime('%d %b, %Y')
+        print("DEBUG: Date formatting successful")
+    except Exception as e:
+        print(f"ERROR: Date formatting failed: {e}")
+        df['Date'] = df['timestamp'].astype(str)
     
     # 2. Create the formatted Rating column (e.g., "5 ★★★★★")
-    # FIX: Use .apply() to safely perform element-wise string repetition
-    def star_formatter(rating):
-        return str(rating) + ' ' + ('★' * rating)
+    try:
+        def star_formatter(rating):
+            try:
+                rating_int = int(rating)
+                return str(rating_int) + ' ' + ('★' * rating_int)
+            except:
+                return str(rating)
 
-    df['Rating'] = df['user_rating'].apply(star_formatter)
+        df['Rating'] = df['user_rating'].apply(star_formatter)
+        print("DEBUG: Rating formatting successful")
+    except Exception as e:
+        print(f"ERROR: Rating formatting failed: {e}")
+        df['Rating'] = df['user_rating'].astype(str)
 
     # 3. Rename columns for display
     df.rename(columns={
@@ -92,6 +110,7 @@ def load_data():
     # Reorder columns for the main table display
     df = df[['Date', 'Rating', 'Customer Review', 'AI Response', 'AI Summary (Internal)', 'AI Actions (Internal)', 'user_rating']]
     
+    print(f"DEBUG: Final DataFrame has {len(df)} rows")
     return df
 
 # UI Layout
@@ -103,6 +122,7 @@ df_data = load_data()
 
 if df_data.empty:
     st.info("No feedback submissions have been recorded yet.")
+    st.caption("Debug: If you've submitted feedback, check the Render logs for error messages.")
 else:
     
     header_col, button_col, status_col = st.columns([4, 2, 3])
@@ -115,10 +135,8 @@ else:
         if st.button("Refresh Data", type="primary", use_container_width=True):
             st.cache_data.clear() # Clears the cache to force a fresh Google Sheets read
             st.rerun() # Reruns the script to fetch new data
-            st.toast("Data refreshed!")
             
     with status_col:
-        
         current_time = datetime.now().strftime("%H:%M:%S")
         st.caption(f"Last UI refresh: {current_time}")
 
@@ -153,7 +171,6 @@ else:
     )
     
     filtered_df = df_data[df_data['user_rating'] >= min_rating]
-
 
     # Create columns to push the table 
     col_left, col_center, col_right = st.columns([1, 5, 1]) 
