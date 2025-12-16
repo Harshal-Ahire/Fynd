@@ -37,7 +37,7 @@ class LLMService:
 
         self.model = GROQ_MODEL
 
-    # --- CONSOLIDATED METHOD USING STRUCTURED OUTPUT ---
+    # Method of Consolidate
     def generate_structured_response(self, rating: int, review: str) -> StructuredOutput:
         """
         Generates all three required outputs (User Response, Summary, Actions) 
@@ -80,7 +80,7 @@ class LLMService:
             except Exception as e:
                 print(f"Groq Client Error: {e}")
         
-        # --- FALLBACK (MOCK DATA) ---
+        # Fallback
         if rating >= 4:
             return StructuredOutput(
                 user_response="Thank you for your excellent feedback! (MOCK)",
@@ -94,3 +94,4 @@ class LLMService:
                 admin_actions="Immediate manager follow-up, Identify root cause, Update training materials (MOCK)"
 
             )
+
