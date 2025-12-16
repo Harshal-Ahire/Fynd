@@ -2,5 +2,5 @@ streamlit
 pandas
 groq
 gspread
+google-auth
 python-dotenv
-
