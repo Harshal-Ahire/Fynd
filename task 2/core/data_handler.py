@@ -1,4 +1,4 @@
-# core/data_handler.py
+
 
 import streamlit as st
 import pandas as pd
@@ -106,7 +106,7 @@ def initialize_data_file():
         # Check if the sheet has any data
         all_values = sheet.get_all_values()
         
-        # If empty, add headers
+        
         if len(all_values) == 0:
             headers = [
                 "timestamp",
@@ -185,3 +185,4 @@ def load_all_submissions():
     except Exception as e:
         print(f"Error loading data from Google Sheets: {e}")
         return pd.DataFrame()
+
