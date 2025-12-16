@@ -6,7 +6,6 @@ from datetime import datetime
 import os
 import json
 import gspread
-# Removed: import base64 (No longer needed)
 from google.oauth2.service_account import Credentials
 
 # Define the name of the Google Sheet and Worksheet
@@ -24,37 +23,73 @@ def get_sheet():
     """
     Establishes connection to Google Sheets using gspread and service account credentials.
     Returns the worksheet object for data operations.
-    
-    SIMPLIFIED: Reads the raw JSON string directly from the environment variable.
-    NOTE: This requires the variable on Render to be manually set as a single, 
-    correctly escaped JSON line (no newlines).
     """
     try:
         # Load the raw string from the environment variable
-        json_string = os.environ["STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT"]
+        json_string = os.environ.get("STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT")
         
-        # Use .strip() to clean any potential leading/trailing whitespace, then parse
-        # the JSON directly.
+        if not json_string:
+            print("ERROR: STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT environment variable not found!")
+            st.error("Environment variable STREAMLIT_SECRETS_GCP_SERVICE_ACCOUNT is missing")
+            return None
+        
+        print(f"JSON string length: {len(json_string)}")
+        print(f"JSON string starts with: {json_string[:50]}...")
+        
+        # Parse the JSON
         credentials_dict = json.loads(json_string.strip())
-
+        print("✓ JSON parsed successfully")
+        
         # Create credentials object
         credentials = Credentials.from_service_account_info(
             credentials_dict,
             scopes=SCOPES
         )
+        print("✓ Credentials created successfully")
         
         # Authorize gspread client
         client = gspread.authorize(credentials)
+        print("✓ Client authorized successfully")
         
-        # Open the spreadsheet and get the worksheet
+        # Open the spreadsheet
         spreadsheet = client.open(SHEET_TITLE)
+        print(f"✓ Spreadsheet '{SHEET_TITLE}' opened successfully")
+        
+        # Get the worksheet
         worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
+        print(f"✓ Worksheet '{WORKSHEET_NAME}' accessed successfully")
         
         return worksheet
+        
+    except KeyError as e:
+        error_msg = f"Missing environment variable: {e}"
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
+        return None
+    except json.JSONDecodeError as e:
+        error_msg = f"Invalid JSON in service account credentials: {e}"
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
+        return None
+    except gspread.exceptions.SpreadsheetNotFound:
+        error_msg = f"Spreadsheet '{SHEET_TITLE}' not found. Check the name and sharing permissions."
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
+        return None
+    except gspread.exceptions.WorksheetNotFound:
+        error_msg = f"Worksheet '{WORKSHEET_NAME}' not found in spreadsheet '{SHEET_TITLE}'."
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
+        return None
+    except gspread.exceptions.APIError as e:
+        error_msg = f"Google Sheets API Error: {e}"
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
+        return None
     except Exception as e:
-        # If this fails, the error will likely be a JSONDecodeError 
-        # because the input string was not valid JSON.
-        print(f"Error connecting to Google Sheets: {e}") 
+        error_msg = f"Unexpected error connecting to Google Sheets: {type(e).__name__}: {e}"
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
         return None
 
 
@@ -110,9 +145,12 @@ def save_submission(data: dict):
         
         # Append the row to the sheet
         sheet.append_row(row_data)
+        print(f"✓ Successfully saved submission to Google Sheets")
         
     except Exception as e:
-        st.error(f"Error saving submission to Google Sheets: {e}")
+        error_msg = f"Error saving submission to Google Sheets: {e}"
+        print(f"ERROR: {error_msg}")
+        st.error(error_msg)
 
 
 def load_all_submissions():
@@ -141,6 +179,7 @@ def load_all_submissions():
             ])
         
         df = pd.DataFrame(records)
+        print(f"✓ Successfully loaded {len(df)} submissions from Google Sheets")
         return df
         
     except Exception as e:
