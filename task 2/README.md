@@ -33,4 +33,4 @@ It collects user ratings and reviews, generates contextual AI responses, and pro
 
 ---
 
-## Project Structure
+
