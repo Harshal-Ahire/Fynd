@@ -4,18 +4,18 @@ from datetime import datetime
 
 from core.data_handler import load_all_submissions
 
-# --- Configuration & Setup ---
+# Configuration 
 st.set_page_config(
     page_title="Feedback Admin Dashboard",
     layout="wide", # Use wide layout for better table viewing
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for a clean, professional admin look
+# CSS
 st.markdown(
     """
     <style>
-    /* 1. Global Layout and Styling */
+    
     .block-container {
         padding-top: 2rem;
     }
@@ -28,7 +28,7 @@ st.markdown(
         text-align: left;
     }
 
-    /* 2. Metric Box Styling */
+    
     .metric-box {
         padding: 20px;
         border-radius: 8px;
@@ -47,8 +47,7 @@ st.markdown(
         color: #555555;
         margin-top: 5px;
     }
-    
-    /* 3. Streamlit Dataframe Centering (Need to wrap in a centered container below) */
+   
     .stDataFrame {
         margin-left: auto;
         margin-right: auto;
@@ -74,7 +73,7 @@ def load_data():
     print(f"DEBUG: Columns: {df.columns.tolist()}")
     print(f"DEBUG: First row: {df.iloc[0].to_dict() if len(df) > 0 else 'No rows'}")
 
-    # 1. Convert timestamp to datetime and format Date
+    # Convert timestamp to datetime and format Date
     try:
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         # Format the Date column as requested: 15 Dec, 2025
@@ -84,7 +83,7 @@ def load_data():
         print(f"ERROR: Date formatting failed: {e}")
         df['Date'] = df['timestamp'].astype(str)
     
-    # 2. Create the formatted Rating column (e.g., "5 ★★★★★")
+    # 2. Create the formatted Rating column 
     try:
         def star_formatter(rating):
             try:
@@ -191,3 +190,4 @@ else:
             use_container_width=True,
             hide_index=True
         )
+
