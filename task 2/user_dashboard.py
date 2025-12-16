@@ -11,9 +11,9 @@ try:
     llm_service = LLMService()
     initialize_data_file() # Ensure the CSV is ready on startup
 except ImportError as e:
-    # Fallback for demonstration if core files are missing or LLM setup iffails
+    # Fallback 
     st.error(f"Error initializing core services (LLM/Data). Check your 'core' directory setup. Error: {e}")
-    # Mock classes for safe execution if imports fail
+   
     class MockLLMService:
         def __init__(self): pass
         def generate_structured_response(self, r, rv):
@@ -39,14 +39,14 @@ except ImportError as e:
     def save_submission(data): pass
 
 
-# Config & Setup
+# Config 
 st.set_page_config(
     page_title="Feedback",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS 
+
 st.markdown(
     """
     <style>
@@ -58,19 +58,19 @@ st.markdown(
     .stApp > header {visibility: hidden;}
     div.stPageLink { display: none; }
     
-    /* Reduce overall vertical spacing */
+    
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
         max-width: 600px;
     }
     
-    /* Center the main content */
+    
     .stApp > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) {
         text-align: center;
     }
 
-    /* 3. Button Styling: Pill Shape and Custom Color #0070f0 */
+    
     .stButton>button {
         width: 100%;
         max-width: 200px; 
@@ -87,7 +87,7 @@ st.markdown(
         border: 1px solid #005bb5;
     }
     
-    /* 4. Response Section - Minimalist and Clean */
+    
     .stInfo {
         border-radius: 8px;
         text-align: left;
@@ -108,11 +108,9 @@ st.markdown(
 #UI Layout
 
 
-#Minimal Title
 st.markdown("<h1 style='font-weight: 500;'>Feedback</h1>", unsafe_allow_html=True)
 st.markdown("<p style='margin-top:-10px; margin-bottom: 40px; color: #555555; font-size: 1.1em;'>Your input helps us improve.</p>", unsafe_allow_html=True)
 
-#Main form container
 with st.form(key='feedback_form'):
     
     #Rating Input
@@ -175,3 +173,4 @@ if submitted:
         # Display AI Response
         st.info(user_response)
         st.markdown("-----")
+
